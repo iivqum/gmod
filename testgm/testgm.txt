@@ -1,0 +1,6 @@
+"testgm"
+{
+	"base"		"base"
+	"title"		"testgm"
+	"menusystem"	"1"
+}
