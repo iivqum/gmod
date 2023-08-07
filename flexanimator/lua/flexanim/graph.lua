@@ -15,17 +15,18 @@ local function point_in_rect(p0,p1,w,h)
 end
 
 function panel:Init()
-	self.spline=catmull_rom_spline(nil,nil,Vector(-0.2,1),Vector(1.2,1))
+	self.spline=catmull_rom_spline(nil,nil,Vector(-0.1,1),Vector(1.1,1))
 	self.spline:add_point(0,1)
-	self.spline:add_point(1,1)	
+	self.spline:add_point(1,1)
+	self.pos=Vector()
 	self.mouse_is_down=false
-	self.pos=Vector(0,0,0)
 	self.t=0
 end
 
 function panel:draw_spline(steps,w,h)
 	local scale=Vector(w,h)
 	for k,v in ipairs(self.spline:get_segments()) do
+		draw.DrawText(v.length, "DermaDefault",v.p2.pos.x*w,v.p2.pos.y*h, color_black, TEXT_ALIGN_CENTER )
 		surface.SetDrawColor(0,0,0)
 		local t=0
 		local fraction=1/steps
@@ -45,15 +46,13 @@ function panel:draw_spline(steps,w,h)
 			draw.RoundedBox(0,pos.x-0.5*self.point_selector_width,pos.y-0.5*self.point_selector_height,self.point_selector_width,self.point_selector_height,point==self.selected_point and point_color_selected or point_color)
 		end
 	end
-	self.t=self.t+FrameTime()*0.01
-	if self.t>1 then self.t=0 end
-	local pos=self.spline:sample_all(self.t)
-	if not pos then return end
-	surface.DrawCircle(pos.x*w,pos.y*h,10,0,0,0)
+	surface.DrawCircle(self.pos.x*w,self.pos.y*h,10,0,0,0)
 end
 
 function panel:sample(t)
 	self.t=math.Clamp(t,0,1)
+	self.pos=self.spline:sample_all(self.t)
+	return self.pos
 end
 
 function panel:Paint(w,h)

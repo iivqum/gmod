@@ -23,14 +23,7 @@ end
 
 local catmull_rom_spline_mt={
 	alpha=0.5,
-	tension=0,
-	points={},
-	segments={},
-	--control points which are not drawn
-	ca=Vector(),
-	cb=Vector(),
-	--length of all segments combined
-	length=0
+	tension=0
 }
 catmull_rom_spline_mt.__index=catmull_rom_spline_mt
 
@@ -40,8 +33,13 @@ function catmull_rom_spline(alpha,tension,ca,cb)
 	return setmetatable({
 		alpha=alpha,
 		tension=tension,
-		ca=ca, 
-		cb=cb
+		points={},
+		segments={},
+		--control points which are not drawn
+		ca=Vector(),
+		cb=Vector(),
+		--length of all segments combined
+		length=0
 	},catmull_rom_spline_mt)
 end
 
@@ -58,7 +56,7 @@ end
 function catmull_rom_spline_mt:compute_distance(k)
 	local segment=self.segments[k]
 	if not segment then return end
-	local steps=100
+	local steps=50
 	local fraction=1/steps
 	local t=0
 	local old_point=segment.p1.pos
