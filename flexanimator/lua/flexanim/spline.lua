@@ -187,6 +187,8 @@ function catmull_rom_spline_mt:sample_fofx(d)
 					endt=endt-delta
 				elseif d>pos.x then
 					startt=startt+delta
+				elseif d==pos.x then
+					break
 				end
 			end
 			return pos.y

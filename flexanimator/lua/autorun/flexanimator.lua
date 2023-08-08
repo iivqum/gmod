@@ -5,9 +5,10 @@ if SERVER then return end
 
 include("flexanim/graph.lua")
 
-local adddddsddddddddddsdsdddsdsdssdsssdsddddsdddd
+local adddddsddssdsddddddsddsddddddsdsdddsdsdssdsssdsddddsdddd
 
 local dropdown_color=Color(98,98,98)
+local timeline_color=Color(102,255,102)
 
 local body=vgui.Create("DFrame")
 body:SetPos(5,5) 
@@ -36,9 +37,29 @@ local flex_curves={}
 local slider=vgui.Create("DPanel",body)
 slider:SetHeight(body:GetTall()*0.05)
 slider:Dock(TOP)
+slider:DockPadding(10,10,10,10)
+slider.progress=0
 
 local model_viewer
 
+function slider:Paint(w,h)
+	draw.RoundedBox(0,0,0,w,h,color_white)
+	draw.RoundedBox(0,0,5,w*self.progress,h-10,color_black)
+	self.progress=self.progress+FrameTime()*0.1
+	if self.progress>1 then self.progress=0 end
+	
+	for k,v in ipairs(flex_curves) do
+		model_viewer:GetEntity():SetFlexWeight(v.flex,math.Clamp(1-v.spline:sample(self.progress).y,0,1))
+	end
+end
+
+function slider:Think(code)
+	if not input.IsMouseDown(MOUSE_LEFT) then return end
+	local x,y=self:ScreenToLocal(gui.MouseX(),gui.MouseY())
+	local w,h=self:GetSize()
+	local nx=x/w
+	self.progress=nx
+end
 
 model_viewer=vgui.Create("DModelPanel",left_body)
 model_viewer:Dock(FILL)
@@ -58,10 +79,6 @@ function model_viewer:LayoutEntity()
 	self:SetLookAt(headpos)
 	self:SetCamPos(headpos-Vector(-15, 0, 0))
 	self:GetEntity():SetEyeTarget(headpos-Vector(-15, 0, 0))
-	
-	for k,v in ipairs(flex_curves) do
-		self:GetEntity():SetFlexWeight(v.flex,math.Clamp(1-v.spline:sample(1).y,0,1))
-	end
 end
 
 left_body:InvalidateLayout()
