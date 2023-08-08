@@ -157,7 +157,7 @@ function catmull_rom_spline_mt:sample(i,t)
 	return segment.coef[1]*t*t*t+segment.coef[2]*t*t+segment.coef[3]*t+segment.coef[4]
 end
 
-function catmull_rom_spline_mt:sample_all(t)
+function catmull_rom_spline_mt:sample_along(t)
 	local fraction=self.length*t
 	local distance=0
 	for k,v in ipairs(self.segments) do
@@ -169,4 +169,27 @@ function catmull_rom_spline_mt:sample_all(t)
 		end
 	end
 	return Vector()
+end
+
+function catmull_rom_spline_mt:sample_fofx(d)
+	--bsp way
+	for k,v in ipairs(self.segments) do
+		local pos1=v.p1.pos
+		local pos2=v.p2.pos
+		if d<=pos2.x and d>=pos1.x then
+			local startt=0
+			local endt=1
+			local pos
+			for i=1,10 do
+				local delta=(endt-startt)*0.5
+				pos=self:sample(k,startt+delta)
+				if d<pos.x then
+					endt=endt-delta
+				elseif d>pos.x then
+					startt=startt+delta
+				end
+			end
+			return pos.y
+		end
+	end	
 end

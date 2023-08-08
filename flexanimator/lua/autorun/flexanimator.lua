@@ -5,12 +5,14 @@ if SERVER then return end
 
 include("flexanim/graph.lua")
 
-local asdssdsddsdddddsddddssdddsssdsssddddddddsdsdsdsddddddddds
+local adddddsddddddddddsdsdddsdsdssdsssdsddddsdddd
+
+local dropdown_color=Color(98,98,98)
 
 local body=vgui.Create("DFrame")
 body:SetPos(5,5) 
 body:SetSize(ScrW()*0.7,ScrH()*0.7) 
-body:DockPadding(50,50,50,50)
+
 body:SetSizable(false)
 body:SetTitle("Name window") 
 body:SetVisible(true) 
@@ -31,16 +33,12 @@ local flex_curves={}
 --local graph=vgui.Create("interactive_graph",body)
 --graph:Dock(FILL)
 
-local slider=vgui.Create("DNumSlider",body)
-slider:SetMax(1)
-slider:SetMin(0)
+local slider=vgui.Create("DPanel",body)
+slider:SetHeight(body:GetTall()*0.05)
 slider:Dock(TOP)
 
 local model_viewer
 
-function slider:OnValueChanged(value)
-	--graph:sample(value)
-end
 
 model_viewer=vgui.Create("DModelPanel",left_body)
 model_viewer:Dock(FILL)
@@ -62,7 +60,7 @@ function model_viewer:LayoutEntity()
 	self:GetEntity():SetEyeTarget(headpos-Vector(-15, 0, 0))
 	
 	for k,v in ipairs(flex_curves) do
-		self:GetEntity():SetFlexWeight(v.flex,math.Clamp(1-v.spline:sample(slider:GetValue()).y,0,1))
+		self:GetEntity():SetFlexWeight(v.flex,math.Clamp(1-v.spline:sample(1).y,0,1))
 	end
 end
 
@@ -83,6 +81,10 @@ for i=1,ent:GetFlexNum() do
 	collapse:SetExpanded(false)
 	collapse:SetLabel(name)
 	collapse.test=10
+	
+	function collapse:Paint(w,h)
+		draw.RoundedBox(0,0,0,w,h,dropdown_color)
+	end
 	
 	local spline=vgui.Create("interactive_graph")
 	spline:Dock(FILL)

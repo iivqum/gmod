@@ -26,7 +26,7 @@ end
 function panel:draw_spline(steps,w,h)
 	local scale=Vector(w,h)
 	for k,v in ipairs(self.spline:get_segments()) do
-		draw.DrawText(v.length, "DermaDefault",v.p2.pos.x*w,v.p2.pos.y*h, color_black, TEXT_ALIGN_CENTER )
+		--draw.DrawText(v.length, "DermaDefault",v.p2.pos.x*w,v.p2.pos.y*h, color_black, TEXT_ALIGN_CENTER )
 		surface.SetDrawColor(0,0,0)
 		local t=0
 		local fraction=1/steps
@@ -51,13 +51,13 @@ end
 
 function panel:sample(t)
 	self.t=math.Clamp(t,0,1)
-	self.pos=self.spline:sample_all(self.t)
+	self.pos=Vector(t,self.spline:sample_fofx(t))
 	return self.pos
 end
 
 function panel:Paint(w,h)
 	draw.RoundedBox(0,0,0,w,h,background_color)
-	self:draw_spline(6,w,h)
+	self:draw_spline(24,w,h)
 end
 
 function panel:normalized_mouse_pos()
