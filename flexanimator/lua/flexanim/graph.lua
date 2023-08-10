@@ -46,12 +46,15 @@ function panel:draw_spline(steps,w,h)
 			draw.RoundedBox(0,pos.x-0.5*self.point_selector_width,pos.y-0.5*self.point_selector_height,self.point_selector_width,self.point_selector_height,point==self.selected_point and point_color_selected or point_color)
 		end
 	end
-	surface.DrawCircle(self.pos.x*w,self.pos.y*h,10,0,0,0)
+end
+
+function panel:get_spline()
+	return self.spline
 end
 
 function panel:sample(t)
 	self.t=math.Clamp(t,0,1)
-	self.pos=Vector(t,self.spline:sample_fofx(t))
+	self.pos=Vector(self.t,self.spline:sample_fofx(self.t))
 	return self.pos
 end
 

@@ -193,5 +193,6 @@ function catmull_rom_spline_mt:sample_fofx(d)
 			end
 			return pos.y
 		end
-	end	
+	end
+	return Vector()
 end
