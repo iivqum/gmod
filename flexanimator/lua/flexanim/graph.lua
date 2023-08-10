@@ -52,6 +52,10 @@ function panel:get_spline()
 	return self.spline
 end
 
+function panel:is_edited()
+	return #self.spline:get_points()>2
+end
+
 function panel:sample(t)
 	self.t=math.Clamp(t,0,1)
 	self.pos=Vector(self.t,self.spline:sample_fofx(self.t))
