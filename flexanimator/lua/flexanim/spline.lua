@@ -36,8 +36,8 @@ function catmull_rom_spline(alpha,tension,ca,cb)
 		points={},
 		segments={},
 		--control points which are not drawn
-		ca=Vector(),
-		cb=Vector(),
+		ca=ca,
+		cb=cb,
 		--length of all segments combined
 		length=0
 	},catmull_rom_spline_mt)

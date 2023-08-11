@@ -1,13 +1,17 @@
 AddCSLuaFile("flexanim/spline.lua")
 AddCSLuaFile("flexanim/graph.lua")
+AddCSLuaFile("flexanim/animator.lua")
+AddCSLuaFile("flexanim/file.lua")
 
 if SERVER then return end
 
 include("flexanim/graph.lua")
 
-local addsdfdsdddsssdddssddssssssdsdss
+local addsddfdddsdddssdsddddsssdSdddddddssssssdsdss
 
 local flex_ui={}
+
+flex_ui.animator=create_animator("")
 
 local dropdown_color=Color(98,98,98)
 local timeline_color=Color(102,255,102)
@@ -38,7 +42,7 @@ function flex_ui.list:PaintOver(w,h)
 	local x=self:GetX()
 	local y=self:GetY()
 	surface.SetDrawColor(255,0,0)
-	local fraction=flex_ui.timeline:get_fraction()
+	local fraction=flex_ui.animator:get_fraction()
 	surface.DrawLine(fraction*w-1,0,fraction*w-1,h)
 end
 
@@ -46,26 +50,17 @@ flex_ui.timeline=vgui.Create("DPanel",flex_ui.window)
 flex_ui.timeline:SetHeight(flex_ui.window:GetTall()*0.05)
 flex_ui.timeline:Dock(TOP)
 flex_ui.timeline:DockPadding(10,10,10,10)
-flex_ui.timeline.progress=0
-flex_ui.timeline.time=3
 flex_ui.timeline.timer_font="Trebuchet24"
 
-function flex_ui.timeline:get_fraction()
-	return self.progress/self.time
-end
-
 function flex_ui.timeline:Paint(w,h)
-	local fraction=self:get_fraction()
+	local fraction=flex_ui.animator:get_fraction()
+	local progress=flex_ui.animator:get_progress()
 	draw.RoundedBox(0,0,0,w,h,background_color)
 	draw.RoundedBox(0,0,5,w,h-10,dropdown_color)
 	draw.RoundedBox(0,0,5,w*fraction,h-10,color_red)
-	draw.DrawText(math.Truncate(self.progress,2),self.timer_font,0,draw.GetFontHeight(self.timer_font)*0.5,color_white,TEXT_ALIGN_LEFT)
-	self.progress=self.progress+FrameTime()
-	if self.progress>self.time then self.progress=0 end
-	for k,v in ipairs(flex_ui.list.splines) do
-		flex_ui.face:GetEntity():SetFlexWeight(v.flex,math.Clamp(1-v.spline:sample(fraction).y,0,1))
-		LocalPlayer():GetEyeTrace().Entity:SetFlexWeight(v.flex,math.Clamp(1-v.spline:sample(fraction).y,0,1))
-	end
+	draw.DrawText(math.Truncate(progress,2),self.timer_font,0,draw.GetFontHeight(self.timer_font)*0.5,color_white,TEXT_ALIGN_LEFT)
+	flex_ui.animator:update_time(FrameTime())
+	flex_ui.animator:update_flexes()
 end
 
 function flex_ui.timeline:Think(code)
@@ -74,7 +69,8 @@ function flex_ui.timeline:Think(code)
 	local w,h=self:GetSize()
 	if x<0 or x>w or y<0 or y>h then return end
 	local nx=x/w
-	self.progress=math.Clamp(nx*flex_ui.timeline.time,0,flex_ui.timeline.time)
+	local progress=math.Clamp(nx*flex_ui.animator:get_length(),0,flex_ui.animator:get_length())
+	flex_ui.animator:set_progress(progress)
 end
 
 flex_ui.face=vgui.Create("DModelPanel",flex_ui.left_panel)
@@ -95,6 +91,7 @@ function flex_ui.face:LayoutEntity()
 	self:SetLookAt(headpos)
 	self:SetCamPos(headpos-Vector(-15, 0, 0))
 	self:GetEntity():SetEyeTarget(headpos-Vector(-15, 0, 0))
+	flex_ui.animator:attach_entity(self:GetEntity())
 end
 
 flex_ui.left_misc=vgui.Create("DPanel",flex_ui.left_panel)
@@ -134,5 +131,8 @@ for i=1,ent:GetFlexNum() do
 	collapse:SetContents(spline)
 	
 	collapse.spline=spline
-	table.insert(flex_ui.list.splines,{flex=i,spline=spline})
+	
+	flex_ui.animator:add_flex_curve(name,spline:get_spline())
 end
+file.CreateDir("flexanim")
+file.Open("flexanim/test.json","w","DATA")

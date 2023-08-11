@@ -1,4 +1,6 @@
 include("flexanim/spline.lua")
+include("flexanim/animator.lua")
+include("flexanim/file.lua")
 
 local panel={}
 
