@@ -6,12 +6,13 @@ AddCSLuaFile("flexanim/file.lua")
 if SERVER then return end
 
 include("flexanim/graph.lua")
+include("flexanim/file.lua")
 
-local addsddfdddsdddssdsddddsssdSdddddddssssssdsdss
+local adfdddsddssddsdd
 
 local flex_ui={}
 
-flex_ui.animator=create_animator("")
+flex_ui.animator=create_animator("test")
 
 local dropdown_color=Color(98,98,98)
 local timeline_color=Color(102,255,102)
@@ -30,11 +31,26 @@ flex_ui.window:ShowCloseButton(true)
 flex_ui.window:MakePopup()
 flex_ui.window:Center()
 
-flex_ui.left_panel=vgui.Create("DPanel",flex_ui.window)
+flex_ui.main_contents=vgui.Create("DPanel",flex_ui.window)
+flex_ui.main_contents:Dock(FILL)
+
+flex_ui.optional_bar=vgui.Create("DMenuBar",flex_ui.window)
+flex_ui.optional_bar:SetHeight(flex_ui.window:GetTall()*0.05)
+
+local opt1=flex_ui.optional_bar:AddMenu("File")
+opt1:AddOption("Open", function() 
+	save_animation_file(flex_ui.animator)
+end):SetIcon("icon16/page_white_go.png")
+
+opt1:AddOption("Save", function() 
+	save_animation_file(flex_ui.animator)
+end):SetIcon("icon16/page_white_go.png")
+
+flex_ui.left_panel=vgui.Create("DPanel",flex_ui.main_contents)
 flex_ui.left_panel:SetWidth(flex_ui.window:GetWide()*0.2)
 flex_ui.left_panel:Dock(LEFT)
 
-flex_ui.list=vgui.Create("DScrollPanel",flex_ui.window)
+flex_ui.list=vgui.Create("DScrollPanel",flex_ui.main_contents)
 flex_ui.list:Dock(FILL)
 flex_ui.list.splines={}
 
@@ -46,7 +62,7 @@ function flex_ui.list:PaintOver(w,h)
 	surface.DrawLine(fraction*w-1,0,fraction*w-1,h)
 end
 
-flex_ui.timeline=vgui.Create("DPanel",flex_ui.window)
+flex_ui.timeline=vgui.Create("DPanel",flex_ui.main_contents)
 flex_ui.timeline:SetHeight(flex_ui.window:GetTall()*0.05)
 flex_ui.timeline:Dock(TOP)
 flex_ui.timeline:DockPadding(10,10,10,10)
@@ -98,7 +114,7 @@ flex_ui.left_misc=vgui.Create("DPanel",flex_ui.left_panel)
 flex_ui.left_misc:SetHeight(flex_ui.window:GetTall()*0.4)
 flex_ui.left_misc:Dock(BOTTOM)
 
-flex_ui.blah=vgui.Create("DPanel",flex_ui.window)
+flex_ui.blah=vgui.Create("DPanel",flex_ui.main_contents)
 flex_ui.blah:SetHeight(flex_ui.window:GetTall()*0.2)
 flex_ui.blah:Dock(BOTTOM)
 
@@ -134,5 +150,3 @@ for i=1,ent:GetFlexNum() do
 	
 	flex_ui.animator:add_flex_curve(name,spline:get_spline())
 end
-file.CreateDir("flexanim")
-file.Open("flexanim/test.json","w","DATA")

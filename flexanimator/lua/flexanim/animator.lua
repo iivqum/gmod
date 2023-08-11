@@ -8,7 +8,8 @@ function create_animator(name,length)
 		splines={},
 		name=name,
 		length=length or 1,
-		progress=0
+		progress=0,
+		nsplines=0
 	},animation_mt)
 end
 
@@ -53,6 +54,7 @@ end
 function animation_mt:add_flex_curve(flex,spline)
 	if self.splines[flex] then print("flex_anim: duplicate flex") return end
 	self.splines[flex]=spline
+	self.nsplines=self.nsplines+1
 end
 
 function animation_mt:find_anim_frame(flex)

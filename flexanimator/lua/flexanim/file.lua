@@ -1,4 +1,8 @@
+include("flexanim/spline.lua")
+
 local path="flexanimator/"
+
+file.CreateDir("flexanimator")
 
 local function write_vector(f,v)
 	f:WriteDouble(v.x)
@@ -18,7 +22,7 @@ local function write_spline_to_file(f,flex,spline)
 	write_vector(f,spline.ca)
 	write_vector(f,spline.cb)
 	for i,point	in ipairs(spline:get_points()) do
-		write_vector(point.pos)			
+		write_vector(f,point.pos)		
 	end
 end
 
@@ -28,21 +32,21 @@ local function read_spline_from_file(f)
 	local npoints=f:ReadShort()
 	local alpha=f:ReadDouble()
 	local tension=f:ReadDouble()
-	local ca=Vector(read_vector())
-	local cb=Vector(read_vector())
+	local ca=Vector(read_vector(f))
+	local cb=Vector(read_vector(f))
 	local spline=catmull_rom_spline(alpha,tension,ca,cb)
 	for i=1,npoints do
-		local x,y=read_vector()
+		local x,y=read_vector(f)
 		spline:add_point(x,y)
 	end
 	return spline
 end
 
 function save_animation_file(anim)
-	local f=open_file(anim.name,true)
+	local f=open_file(anim.name,false)
 	if not f then print("flexanim: could not save animation ",anim.name) return end
 	f:WriteDouble(anim.length)
-	f:WriteShort(#anim.splines)
+	f:WriteShort(anim.nsplines)
 	for flex,spline in pairs(anim.splines) do
 		write_spline_to_file(f,flex,spline)
 	end
@@ -50,21 +54,22 @@ function save_animation_file(anim)
 end
 
 function open_animation_file(name)
-	local f=open_file(name,false)
-	if not f then print("flexanim: could not open animation ",anim.name) return end
+	local f=open_file(name,true)
+	if not f then print("flexanim: could not open animation ",name) return end
 	local length=f:ReadDouble()
 	local nsplines=f:ReadShort()
 	local anim=create_animator(name,length)
 	for i=1,nsplines do
 		local spline=read_spline_from_file(f)
+		PrintTable(spline)
 		anim:add_flex_curve(spline)
 	end
 	return anim
 end
 
-function open_file(name,clean)
+function open_file(name,rd)
 	assert(type(name)=="string")
-	local f=file.Open(path..name,clean and "w+" or "r+","DATA")
+	local f=file.Open(path..name..".dat",rd and "rb" or "wb","DATA")
 	if not f then print("flexanim: could not open file ",name) return end
 	return f
 end
