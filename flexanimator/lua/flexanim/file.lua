@@ -1,8 +1,9 @@
 include("flexanim/spline.lua")
+include("flexanim/animator.lua")
 
-local path="flexanimator/"
+FLEX_ANIMATION_BASEFOLDER="flexanimator"
 
-file.CreateDir("flexanimator")
+file.CreateDir(FLEX_ANIMATION_BASEFOLDER)
 
 local function write_vector(f,v)
 	f:WriteDouble(v.x)
@@ -14,9 +15,9 @@ local function read_vector(f)
 end
 
 local function write_spline_to_file(f,flex,spline)
-	f:WriteShort(#flex)
+	f:WriteUShort(#flex)
 	f:Write(flex)
-	f:WriteShort(#spline:get_points())
+	f:WriteUShort(#spline:get_points())
 	f:WriteDouble(spline.alpha)
 	f:WriteDouble(spline.tension)
 	write_vector(f,spline.ca)
@@ -27,9 +28,9 @@ local function write_spline_to_file(f,flex,spline)
 end
 
 local function read_spline_from_file(f)
-	local slen=f:ReadShort()
+	local slen=f:ReadUShort()
 	local flex=f:Read(slen)
-	local npoints=f:ReadShort()
+	local npoints=f:ReadUShort()
 	local alpha=f:ReadDouble()
 	local tension=f:ReadDouble()
 	local ca=Vector(read_vector(f))
@@ -39,17 +40,20 @@ local function read_spline_from_file(f)
 		local x,y=read_vector(f)
 		spline:add_point(x,y)
 	end
-	return spline
+	return flex,spline
 end
 
 function save_animation_file(anim)
+	--file.Delete(FLEX_ANIMATION_BASEFOLDER.."/"..anim.name..".dat")
 	local f=open_file(anim.name,false)
 	if not f then print("flexanim: could not save animation ",anim.name) return end
 	f:WriteDouble(anim.length)
-	f:WriteShort(anim.nsplines)
+	f:WriteUShort(anim.nsplines)
 	for flex,spline in pairs(anim.splines) do
 		write_spline_to_file(f,flex,spline)
 	end
+	f:Flush()
+	f:Close()
 	return true
 end
 
@@ -57,25 +61,26 @@ function open_animation_file(name)
 	local f=open_file(name,true)
 	if not f then print("flexanim: could not open animation ",name) return end
 	local length=f:ReadDouble()
-	local nsplines=f:ReadShort()
+	local nsplines=f:ReadUShort()
 	local anim=create_animator(name,length)
 	for i=1,nsplines do
-		local spline=read_spline_from_file(f)
-		PrintTable(spline)
-		anim:add_flex_curve(spline)
+		local flex,spline=read_spline_from_file(f)
+		anim:add_flex_curve(flex==nil and "" or flex,spline)
 	end
+	PrintTable(anim)
+	f:Close()
 	return anim
 end
 
 function open_file(name,rd)
 	assert(type(name)=="string")
-	local f=file.Open(path..name..".dat",rd and "rb" or "wb","DATA")
+	local f=file.Open(FLEX_ANIMATION_BASEFOLDER.."/"..name..".dat",rd and "rb" or "wb","DATA")
 	if not f then print("flexanim: could not open file ",name) return end
 	return f
 end
 
 function find_animation_file(name)
-	return file.Exists(path..name,"DATA")
+	return file.Exists(FLEX_ANIMATION_BASEFOLDER..name,"DATA")
 end
 
 function open_valid_animation_file()

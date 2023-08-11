@@ -50,6 +50,10 @@ function panel:draw_spline(steps,w,h)
 	end
 end
 
+function panel:use_spline(spline)
+	self.spline=spline
+end
+
 function panel:get_spline()
 	return self.spline
 end

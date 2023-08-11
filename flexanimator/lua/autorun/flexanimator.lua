@@ -8,7 +8,7 @@ if SERVER then return end
 include("flexanim/graph.lua")
 include("flexanim/file.lua")
 
-local adfdddsddssddsdd
+local a=aa
 
 local flex_ui={}
 
@@ -20,9 +20,7 @@ local color_red=Color(255,51,51)
 local background_color=Color(230,230,230)
 
 flex_ui.window=vgui.Create("DFrame")
-flex_ui.window:SetPos(5,5) 
 flex_ui.window:SetSize(ScrW()*0.7,ScrH()*0.7)
-
 flex_ui.window:SetSizable(false)
 flex_ui.window:SetTitle("Name window") 
 flex_ui.window:SetVisible(true) 
@@ -35,11 +33,39 @@ flex_ui.main_contents=vgui.Create("DPanel",flex_ui.window)
 flex_ui.main_contents:Dock(FILL)
 
 flex_ui.optional_bar=vgui.Create("DMenuBar",flex_ui.window)
-flex_ui.optional_bar:SetHeight(flex_ui.window:GetTall()*0.05)
+flex_ui.optional_bar:SetHeight(flex_ui.window:GetTall()*0.03)
 
 local opt1=flex_ui.optional_bar:AddMenu("File")
 opt1:AddOption("Open", function() 
-	save_animation_file(flex_ui.animator)
+	local file_browser=vgui.Create("DFrame")
+	file_browser:SetSize(ScrW()*0.2,ScrH()*0.2)
+	file_browser:SetSizable(false)
+	file_browser:SetTitle("Name window") 
+	file_browser:SetVisible(true) 
+	file_browser:SetDraggable(true) 
+	file_browser:ShowCloseButton(true) 
+	file_browser:MakePopup()
+	file_browser:Center()
+	file_browser:SetParent(flex_ui.window)
+	
+	local browser=vgui.Create("DFileBrowser",file_browser)
+	browser:Dock(FILL)
+	browser:SetPath("DATA")
+	browser:SetBaseFolder(FLEX_ANIMATION_BASEFOLDER)
+	browser:SetOpen(true)
+	browser:SetCurrentFolder(FLEX_ANIMATION_BASEFOLDER)
+	
+	function browser:OnDoubleClick(path,panel)
+		local name=string.GetFileFromFilename(path)
+		name=string.match(name,"[%w]+")
+		local anim=open_animation_file(name)
+		if not anim then return end
+		flex_ui.animator=anim
+		PrintTable(anim)
+		flex_ui.list:GetCanvas():Clear()
+		flex_ui.build_flex_table()
+		file_browser:Close()
+	end
 end):SetIcon("icon16/page_white_go.png")
 
 opt1:AddOption("Save", function() 
@@ -114,39 +140,46 @@ flex_ui.left_misc=vgui.Create("DPanel",flex_ui.left_panel)
 flex_ui.left_misc:SetHeight(flex_ui.window:GetTall()*0.4)
 flex_ui.left_misc:Dock(BOTTOM)
 
-flex_ui.blah=vgui.Create("DPanel",flex_ui.main_contents)
-flex_ui.blah:SetHeight(flex_ui.window:GetTall()*0.2)
-flex_ui.blah:Dock(BOTTOM)
-
 function flex_ui.left_misc:Paint(w,h)
 	draw.RoundedBox(0,0,0,w,h,background_color)
 end
 
-local ent=flex_ui.face:GetEntity()
+function flex_ui.build_flex_table()
+	local ent=flex_ui.face:GetEntity()
+	for i=1,ent:GetFlexNum() do
+		local name=ent:GetFlexName(i)
 
-for i=1,ent:GetFlexNum() do
-	local name=ent:GetFlexName(i)
-
-	local collapse=vgui.Create("DCollapsibleCategory",flex_ui.list)
-	collapse:Dock(TOP)
-	collapse:SetHeight(200)
-	collapse:SetExpanded(false)
-	collapse:SetLabel(name)
-	collapse.test=10
-	
-	function collapse:Paint(w,h)
-		draw.RoundedBox(0,0,0,w,h,dropdown_color)
-		if not self.spline or not self.spline:is_edited() then return end
-		local barw=w*0.1
-		draw.RoundedBox(4,w-barw,0,barw,h,color_red)
+		local collapse=vgui.Create("DCollapsibleCategory",flex_ui.list)
+		collapse:Dock(TOP)
+		collapse:SetHeight(200)
+		collapse:SetExpanded(false)
+		collapse:SetLabel(name)
+		collapse.test=10
+		
+		function collapse:Paint(w,h)
+			draw.RoundedBox(0,0,0,w,h,dropdown_color)
+			if not self.spline or not self.spline:is_edited() then return end
+			local barw=w*0.1
+			draw.RoundedBox(4,w-barw,0,barw,h,color_red)
+		end
+		
+		local spline=vgui.Create("interactive_graph")
+		spline:Dock(FILL)
+		spline:SetHeight(300)
+		
+		collapse:SetContents(spline)
+		collapse.spline=spline
+		
+		if flex_ui.animator:has_flex(name) then
+			spline:use_spline(flex_ui.animator:get_flex_curve(name))
+		else
+			flex_ui.animator:add_flex_curve(name,spline:get_spline())
+		end
+		
+		if spline:is_edited() then
+			collapse:SetExpanded(true)
+		end
 	end
-	
-	local spline=vgui.Create("interactive_graph")
-	spline:Dock(FILL)
-	spline:SetHeight(300)
-	collapse:SetContents(spline)
-	
-	collapse.spline=spline
-	
-	flex_ui.animator:add_flex_curve(name,spline:get_spline())
 end
+
+flex_ui.build_flex_table()
