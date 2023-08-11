@@ -67,7 +67,6 @@ function open_animation_file(name)
 		local flex,spline=read_spline_from_file(f)
 		anim:add_flex_curve(flex==nil and "" or flex,spline)
 	end
-	PrintTable(anim)
 	f:Close()
 	return anim
 end

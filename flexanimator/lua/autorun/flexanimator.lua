@@ -8,11 +8,11 @@ if SERVER then return end
 include("flexanim/graph.lua")
 include("flexanim/file.lua")
 
-local a=aa
+local a=aadddssddddddddsddsd
 
 local flex_ui={}
 
-flex_ui.animator=create_animator("test")
+flex_ui.animator=create_animator("myanimation")
 
 local dropdown_color=Color(98,98,98)
 local timeline_color=Color(102,255,102)
@@ -22,12 +22,17 @@ local background_color=Color(230,230,230)
 flex_ui.window=vgui.Create("DFrame")
 flex_ui.window:SetSize(ScrW()*0.7,ScrH()*0.7)
 flex_ui.window:SetSizable(false)
-flex_ui.window:SetTitle("Name window") 
+flex_ui.window:SetTitle(flex_ui.animator.name) 
 flex_ui.window:SetVisible(true) 
 flex_ui.window:SetDraggable(true) 
 flex_ui.window:ShowCloseButton(true) 
 flex_ui.window:MakePopup()
 flex_ui.window:Center()
+
+function flex_ui.window:OnKeyCodePressed(code)
+	if code~=KEY_SPACE then return end
+	flex_ui.timeline.paused=not flex_ui.timeline.paused and true or false
+end
 
 flex_ui.main_contents=vgui.Create("DPanel",flex_ui.window)
 flex_ui.main_contents:Dock(FILL)
@@ -37,18 +42,18 @@ flex_ui.optional_bar:SetHeight(flex_ui.window:GetTall()*0.03)
 
 local opt1=flex_ui.optional_bar:AddMenu("File")
 opt1:AddOption("Open", function() 
-	local file_browser=vgui.Create("DFrame")
-	file_browser:SetSize(ScrW()*0.2,ScrH()*0.2)
-	file_browser:SetSizable(false)
-	file_browser:SetTitle("Name window") 
-	file_browser:SetVisible(true) 
-	file_browser:SetDraggable(true) 
-	file_browser:ShowCloseButton(true) 
-	file_browser:MakePopup()
-	file_browser:Center()
-	file_browser:SetParent(flex_ui.window)
+	local body=vgui.Create("DFrame")
+	body:SetSize(ScrW()*0.2,ScrH()*0.2)
+	body:SetSizable(false)
+	body:SetTitle("Select animation") 
+	body:SetVisible(true) 
+	body:SetDraggable(true) 
+	body:ShowCloseButton(true) 
+	body:MakePopup()
+	body:Center()
+	body:SetParent(flex_ui.window)
 	
-	local browser=vgui.Create("DFileBrowser",file_browser)
+	local browser=vgui.Create("DFileBrowser",body)
 	browser:Dock(FILL)
 	browser:SetPath("DATA")
 	browser:SetBaseFolder(FLEX_ANIMATION_BASEFOLDER)
@@ -57,19 +62,79 @@ opt1:AddOption("Open", function()
 	
 	function browser:OnDoubleClick(path,panel)
 		local name=string.GetFileFromFilename(path)
-		name=string.match(name,"[%w]+")
+		name=string.sub(name,0,#name-4)
 		local anim=open_animation_file(name)
 		if not anim then return end
 		flex_ui.animator=anim
 		PrintTable(anim)
 		flex_ui.list:GetCanvas():Clear()
 		flex_ui.build_flex_table()
-		file_browser:Close()
+		body:Close()
+		flex_ui.window:SetTitle(flex_ui.animator.name)
+	end
+end):SetIcon("icon16/page_white_go.png")
+opt1:AddOption("Save", function()
+	local body=vgui.Create("DFrame")
+	body:SetSize(ScrW()*0.2,ScrH()*0.2)
+	body:SetSizable(false)
+	body:SetTitle("Save animation") 
+	body:SetVisible(true) 
+	body:SetDraggable(true) 
+	body:ShowCloseButton(true) 
+	body:MakePopup()
+	body:Center()
+	body:SetParent(flex_ui.window)
+	
+	local text=vgui.Create("DTextEntry",body)
+	text:SetWidth(body:GetWide()*0.8)
+	text:Center()
+	text:SetText(flex_ui.animator.name)
+
+	local button=vgui.Create("DButton",body)
+	button:Center()
+	button:SetY(body:GetTall()*0.7)
+	button:SetText("SAVE")
+	
+	function button:DoClick()
+		local name=text:GetValue()
+		if string.match(name,"[\\/:\"*?<>|]+") then return end
+		flex_ui.animator.name=text:GetValue()
+		save_animation_file(flex_ui.animator)
+		body:Close()
+		flex_ui.window:SetTitle(flex_ui.animator.name)
 	end
 end):SetIcon("icon16/page_white_go.png")
 
-opt1:AddOption("Save", function() 
-	save_animation_file(flex_ui.animator)
+local opt2=flex_ui.optional_bar:AddMenu("Edit")
+opt2:AddOption("Change model", function()
+	local body=vgui.Create("DFrame")
+	body:SetSize(ScrW()*0.45,ScrH()*0.45)
+	body:SetSizable(false)
+	body:SetTitle("Save animation") 
+	body:SetVisible(true) 
+	body:SetDraggable(true) 
+	body:ShowCloseButton(true) 
+	body:MakePopup()
+	body:Center()
+	body:SetParent(flex_ui.window)
+	
+	local browser=vgui.Create("DFileBrowser",body)
+	browser:SetModels(true)
+	browser:SetOpen(true)
+	browser:SetFileTypes("*.mdl")
+	browser:Dock(FILL)
+	browser:SetPath("GAME")
+	browser:SetBaseFolder("models")
+	
+	function browser:OnDoubleClick(path,panel)
+		local oldmodel=flex_ui.face:GetModel()
+		flex_ui.face:SetModel(path)
+		if flex_ui.face:GetEntity():GetFlexNum()==0 then
+			flex_ui.face:SetModel(oldmodel)
+			return
+		end
+		flex_ui.build_flex_table()
+	end	
 end):SetIcon("icon16/page_white_go.png")
 
 flex_ui.left_panel=vgui.Create("DPanel",flex_ui.main_contents)
@@ -101,7 +166,9 @@ function flex_ui.timeline:Paint(w,h)
 	draw.RoundedBox(0,0,5,w,h-10,dropdown_color)
 	draw.RoundedBox(0,0,5,w*fraction,h-10,color_red)
 	draw.DrawText(math.Truncate(progress,2),self.timer_font,0,draw.GetFontHeight(self.timer_font)*0.5,color_white,TEXT_ALIGN_LEFT)
-	flex_ui.animator:update_time(FrameTime())
+	if not self.paused then 
+		flex_ui.animator:update_time(FrameTime())
+	end
 	flex_ui.animator:update_flexes()
 end
 
@@ -117,7 +184,7 @@ end
 
 flex_ui.face=vgui.Create("DModelPanel",flex_ui.left_panel)
 flex_ui.face:Dock(FILL)
-flex_ui.face:SetModel("models/Humans/Group03/male_02.mdl")
+flex_ui.face:SetModel("models/Humans/Group02/male_02.mdl")
 flex_ui.face:SetAnimated(false)
 flex_ui.face:SetFOV(40)
 
@@ -136,11 +203,27 @@ function flex_ui.face:LayoutEntity()
 	flex_ui.animator:attach_entity(self:GetEntity())
 end
 
-flex_ui.left_misc=vgui.Create("DPanel",flex_ui.left_panel)
-flex_ui.left_misc:SetHeight(flex_ui.window:GetTall()*0.4)
-flex_ui.left_misc:Dock(BOTTOM)
+flex_ui.hints=vgui.Create("DPanel",flex_ui.left_panel)
+flex_ui.hints:SetHeight(flex_ui.window:GetTall()*0.4)
+flex_ui.hints:DockPadding(10,10,10,10)
+flex_ui.hints:Dock(BOTTOM)
+flex_ui.hints.help={
+	"SPACEBAR to pause the timeline",
+	"CNTL + left click to add control points",
+	"Right click to remove control points",
+	"Click and drag points to change their amplitude"
+}
 
-function flex_ui.left_misc:Paint(w,h)
+for i=1,#flex_ui.hints.help do
+	local label=vgui.Create("DLabel",flex_ui.hints)
+	label:SetFont("Default")
+	label:SetColor(color_black)
+	label:SetText(flex_ui.hints.help[i])
+
+	label:Dock(TOP)
+end
+
+function flex_ui.hints:Paint(w,h)
 	draw.RoundedBox(0,0,0,w,h,background_color)
 end
 
