@@ -9,7 +9,9 @@ function create_animator(name,length)
 		name=name,
 		length=length or 1,
 		progress=0,
-		nsplines=0
+		nsplines=0,
+		looped=false,
+		playing=false
 	},animation_mt)
 end
 
@@ -35,8 +37,13 @@ function animation_mt:get_fraction()
 end
 
 function animation_mt:update_time(dt)
+	if not self.playing then return end
 	self.progress=self.progress+dt
-	if self.progress>self.length then self.progress=0 end
+	if self.progress>self.length then 
+		if self.looped then self.progress=0 return end
+		self.progress=self.length
+		self.playing=false
+	end
 end
 
 function animation_mt:has_flex(name)
@@ -44,6 +51,7 @@ function animation_mt:has_flex(name)
 end
 
 function animation_mt:update_flexes()
+	if not self.playing then return end
 	if not self.ent or not IsValid(self.ent) then print("flexaddon: warning, invalid entity ("..self.name..")") return end
 	for flex,spline in pairs(self.splines) do
 		local fid=self.ent:GetFlexIDByName(flex)
@@ -55,8 +63,22 @@ function animation_mt:update_flexes()
 	end
 end
 
+function animation_mt:set_looped(b)
+	assert(type(b)=="boolean")
+	self.looped=b
+end
+
 function animation_mt:get_length()
 	return self.length
+end
+
+function animation_mt:play()
+	self.progress=0
+	self.playing=true
+end
+
+function animation_mt:pause()
+	self.playing=false
 end
 
 function animation_mt:add_flex_curve(flex,spline)
@@ -64,3 +86,23 @@ function animation_mt:add_flex_curve(flex,spline)
 	self.splines[flex]=spline
 	self.nsplines=self.nsplines+1
 end
+
+local ent_mt=FindMetaTable("Entity")
+
+function ent_mt:play_animation(anim)
+	anim:attach_entity(self)
+	anim:play()
+	self.flexanim=anim
+end
+
+hook.Add("HUDPaint","flexaddon_animate",function()
+	for k,v in pairs(ents:GetAll()) do
+		if v.flexanim then
+			v.flexanim:update_time(FrameTime())
+			v.flexanim:update_flexes()
+			if v.flexanim.playing==false then
+				v.flexanim=nil
+			end
+		end
+	end
+end)

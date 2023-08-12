@@ -13,6 +13,8 @@ local function open_ui()
 local flex_ui={}
 
 flex_ui.animator=create_animator("myanimation")
+flex_ui.animator:set_looped(true)
+flex_ui.animator:play()
 
 local dropdown_color=Color(120,120,120)
 local timeline_color=Color(102,255,102)
@@ -67,6 +69,8 @@ opt1:AddOption("Open", function()
 		local anim=open_animation_file(name)
 		if not anim then return end
 		flex_ui.animator=anim
+		flex_ui.animator:set_looped(true)
+		flex_ui.animator:play()
 		flex_ui.list:GetCanvas():Clear()
 		flex_ui.build_flex_table()
 		body:Close()
@@ -166,10 +170,6 @@ function flex_ui.timeline:Paint(w,h)
 	draw.RoundedBox(0,0,5,w,h-10,dropdown_color)
 	draw.RoundedBox(0,0,5,w*fraction,h-10,color_darkgray)
 	draw.DrawText(math.Truncate(progress,2),self.timer_font,w*0.5,draw.GetFontHeight(self.timer_font)*0.5,color_white,TEXT_ALIGN_CENTER)
-	if not self.paused then 
-		flex_ui.animator:update_time(FrameTime())
-	end
-	flex_ui.animator:update_flexes()
 end
 
 function flex_ui.timeline:Think(code)
@@ -178,8 +178,7 @@ function flex_ui.timeline:Think(code)
 	local w,h=self:GetSize()
 	if x<0 or x>w or y<0 or y>h then return end
 	local nx=x/w
-	local progress=math.Clamp(nx*flex_ui.animator:get_length(),0,flex_ui.animator:get_length())
-	flex_ui.animator:set_progress(progress)
+	flex_ui.animator:set_progress(nx*flex_ui.animator:get_length())
 end
 
 flex_ui.face=vgui.Create("DModelPanel",flex_ui.left_panel)
@@ -193,6 +192,11 @@ function flex_ui.face:PreDrawModel(ent)
 	local w,h=self:GetSize()
 	draw.RoundedBox(0,0,0,w,h,color_black)
 	cam.End2D()
+	
+	if not flex_ui.timeline.paused then 
+		flex_ui.animator:update_time(FrameTime())
+	end
+	flex_ui.animator:update_flexes()	
 end
 
 function flex_ui.face:LayoutEntity()

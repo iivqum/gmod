@@ -23,6 +23,7 @@ function panel:Init()
 	self.pos=Vector()
 	self.mouse_is_down=false
 	self.t=0
+	self.zoom=1
 end
 
 function panel:draw_spline(steps,w,h)
@@ -86,6 +87,10 @@ function panel:Think()
 	local w,h=self:GetSize()
 	local scale=Vector(w,h)
 	self.spline:set_point(self.selected_point.index,math.Clamp(n.y,0,1))
+end
+
+function panel:OnMouseWheeled(delta)
+	self.zoom=self.zoom+0.1*delta
 end
 
 function panel:OnMousePressed(code)
