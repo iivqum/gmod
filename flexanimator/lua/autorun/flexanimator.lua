@@ -140,6 +140,35 @@ opt2:AddOption("Change model", function()
 		flex_ui.build_flex_table()
 	end	
 end):SetIcon("icon16/page_white_go.png")
+opt2:AddOption("Timeline", function()
+	local body=vgui.Create("DFrame")
+	body:SetSize(ScrW()*0.1,ScrH()*0.1)
+	body:SetSizable(false)
+	body:SetTitle("Save animation") 
+	body:SetVisible(true) 
+	body:SetDraggable(true) 
+	body:ShowCloseButton(true) 
+	body:MakePopup()
+	body:Center()
+	body:SetParent(flex_ui.window)
+	
+	local text=vgui.Create("DTextEntry",body)
+	text:SetWidth(body:GetWide()*0.8)
+	text:Center()
+	text:SetText(flex_ui.animator.length)
+
+	local button=vgui.Create("DButton",body)
+	button:Center()
+	button:SetY(body:GetTall()*0.7)
+	button:SetText("SET")
+	
+	function button:DoClick()
+		local length=tonumber(text:GetValue())
+		if length==nil then return end
+		flex_ui.animator.length=length
+		body:Close()
+	end
+end):SetIcon("icon16/page_white_go.png")
 
 flex_ui.left_panel=vgui.Create("DPanel",flex_ui.main_contents)
 flex_ui.left_panel:SetWidth(flex_ui.window:GetWide()*0.2)
@@ -215,8 +244,7 @@ flex_ui.hints.help={
 	"SPACEBAR to pause the timeline",
 	"CNTL + left click to add control points",
 	"Right click to remove control points",
-	"Click and drag points to change their amplitude",
-	"Use scrollwheel to zoom on graph"
+	"Click and drag points to change their amplitude"
 }
 
 for i=1,#flex_ui.hints.help do
