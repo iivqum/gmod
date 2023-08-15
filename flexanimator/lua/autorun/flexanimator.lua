@@ -144,7 +144,7 @@ opt2:AddOption("Timeline", function()
 	local body=vgui.Create("DFrame")
 	body:SetSize(ScrW()*0.1,ScrH()*0.1)
 	body:SetSizable(false)
-	body:SetTitle("Save animation") 
+	body:SetTitle("Change time") 
 	body:SetVisible(true) 
 	body:SetDraggable(true) 
 	body:ShowCloseButton(true) 
@@ -165,7 +165,7 @@ opt2:AddOption("Timeline", function()
 	function button:DoClick()
 		local length=tonumber(text:GetValue())
 		if length==nil then return end
-		flex_ui.animator.length=length
+		flex_ui.animator:set_length(length)
 		body:Close()
 	end
 end):SetIcon("icon16/page_white_go.png")
@@ -221,7 +221,6 @@ function flex_ui.face:PreDrawModel(ent)
 	local w,h=self:GetSize()
 	draw.RoundedBox(0,0,0,w,h,color_black)
 	cam.End2D()
-	
 	if not flex_ui.timeline.paused then 
 		flex_ui.animator:update_time(FrameTime())
 	end
@@ -240,18 +239,18 @@ flex_ui.hints=vgui.Create("DPanel",flex_ui.left_panel)
 flex_ui.hints:SetHeight(flex_ui.window:GetTall()*0.4)
 flex_ui.hints:DockPadding(10,10,10,10)
 flex_ui.hints:Dock(BOTTOM)
-flex_ui.hints.help={
+flex_ui.hints.texts={
 	"SPACEBAR to pause the timeline",
 	"CNTL + left click to add control points",
 	"Right click to remove control points",
 	"Click and drag points to change their amplitude"
 }
 
-for i=1,#flex_ui.hints.help do
+for i=1,#flex_ui.hints.texts do
 	local label=vgui.Create("DLabel",flex_ui.hints)
 	label:SetFont("Default")
 	label:SetColor(color_black)
-	label:SetText(flex_ui.hints.help[i])
+	label:SetText(flex_ui.hints.texts[i])
 
 	label:Dock(TOP)
 end
@@ -264,6 +263,7 @@ function flex_ui.build_flex_table()
 	local ent=flex_ui.face:GetEntity()
 	for i=1,ent:GetFlexNum() do
 		local name=ent:GetFlexName(i)
+		local min,max=ent:GetFlexBounds(i)
 
 		local collapse=vgui.Create("DCollapsibleCategory",flex_ui.list)
 		collapse:Dock(TOP)
@@ -290,6 +290,10 @@ function flex_ui.build_flex_table()
 			spline:use_spline(flex_ui.animator:get_flex_curve(name))
 		else
 			flex_ui.animator:add_flex_curve(name,spline:get_spline())
+		end
+		
+		if min<0 then
+			spline:zero_center()
 		end
 		
 		if spline:is_edited() then
