@@ -39,7 +39,8 @@ function catmull_rom_spline(alpha,tension,ca,cb)
 		ca=ca,
 		cb=cb,
 		--length of all segments combined
-		length=0
+		length=0,
+		offset=0
 	},catmull_rom_spline_mt)
 end
 

@@ -2,10 +2,13 @@
 local animation_mt={}
 animation_mt.__index=animation_mt
 
+local animation_cache={}
+
 function create_animator(name,length)
 	assert(type(name)=="string")
 	return setmetatable({
 		splines={},
+		offsets={},
 		name=name,
 		length=length or 1,
 		max_progress=length or 1,
@@ -23,6 +26,32 @@ end
 
 function animation_mt:get_flex_curve(name)
 	return self.splines[name]
+end
+
+function animation_mt:cache()
+	if animation_cache[self.name] then return end
+	animation_cache[self.name]=self
+end
+
+function animator_pull_from_cache(name)
+	assert(animation_cache[name]~=nil,"flexaddon: warning, not in cache ("..name..")")
+	local store=animation_cache[name]
+	local anim=create_animator(name,store.length)
+	anim.splines=store.splines
+	anim.nsplines=store.nsplines
+	anim.max_progress=store.max_progress
+	return anim
+end
+
+function animation_mt:set_offset(flex,ofs)
+	if not self.splines[flex] then print("flexaddon: warning, tried to offset spline but it doesnt exist ("..flex..")") return end
+	assert(type(ofs)=="number")
+	if ofs>=1 then print("flexaddon: warning, offset greater or eq to 1 ("..flex..")") return end
+	self.offsets[flex]=ofs
+end
+
+function animation_mt:get_offset(flex)
+	return self.offsets[flex] or 0
 end
 
 function animation_mt:set_length(t)
@@ -70,12 +99,14 @@ function animation_mt:update_flexes()
 	for flex,spline in pairs(self.splines) do
 		local fid=self.ent:GetFlexIDByName(flex)
 		if fid then
-			local weight=spline:sample_fofx(self:get_fraction())
-			local min,max=self.ent:GetFlexBounds(fid)
-			--all animations are flipped in the editor
-			self.ent:SetFlexWeight(fid,weight*max)
+			if #spline:get_points()>2 then
+				local weight=spline:sample_fofx(self:get_fraction())
+				local min,max=self.ent:GetFlexBounds(fid)
+				--all animations are flipped in the editor
+				self.ent:SetFlexWeight(fid,weight*max)
+			end
 		else
-			print("flexaddon: warning, tried to animate invalid flex")
+			print("flexaddon: warning, tried to animate invalid flex ("..flex..")")
 			self:pause()
 			return
 		end
@@ -109,18 +140,26 @@ end
 local ent_mt=FindMetaTable("Entity")
 
 function ent_mt:play_animation(anim)
+	if self.flexanims==nil then self.flexanims={} end
+	if self.flexanims[anim.name]~=nil then return end
 	anim:attach_entity(self)
 	anim:play()
-	self.flexanim=anim
+	self.flexanims[anim.name]=anim
 end
 
-hook.Add("HUDPaint","flexaddon_animate",function()
+hook.Add("PostDrawHUD","flexaddon_animate",function()
 	for k,v in pairs(ents:GetAll()) do
-		if v.flexanim then
-			v.flexanim:update_time(FrameTime())
-			v.flexanim:update_flexes()
-			if v.flexanim.playing==false then
-				v.flexanim=nil
+		if v.flexanims~=nil then
+			local schedule_remove={}
+			for name,anim in pairs(v.flexanims) do
+				anim:update_time(FrameTime())
+				anim:update_flexes()
+				if anim.playing==false then
+					table.insert(schedule_remove,anim)
+				end
+			end
+			for i=1,#schedule_remove do
+				v.flexanims[schedule_remove[i]]=nil
 			end
 		end
 	end

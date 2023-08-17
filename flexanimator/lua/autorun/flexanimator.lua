@@ -63,6 +63,11 @@ opt1:AddOption("Open", function()
 	browser:SetOpen(true)
 	browser:SetCurrentFolder(FLEX_ANIMATION_BASEFOLDER)
 	
+	function browser:OnRightClick(path,selected)
+		file.Delete(path)
+		self:SetupFiles()
+	end	
+	
 	function browser:OnDoubleClick(path,panel)
 		local name=string.GetFileFromFilename(path)
 		name=string.sub(name,0,#name-4)
@@ -70,6 +75,7 @@ opt1:AddOption("Open", function()
 		if not anim then return end
 		flex_ui.animator=anim
 		flex_ui.animator:set_looped(true)
+		flex_ui.animator:attach_entity(flex_ui.face:GetEntity())
 		flex_ui.animator:play()
 		flex_ui.list:GetCanvas():Clear()
 		flex_ui.build_flex_table()
@@ -130,13 +136,15 @@ opt2:AddOption("Change model", function()
 	browser:SetPath("GAME")
 	browser:SetBaseFolder("models")
 	
-	function browser:OnDoubleClick(path,panel)
+	function browser:OnDoubleClick(path,selected)
 		local oldmodel=flex_ui.face:GetModel()
 		flex_ui.face:SetModel(path)
 		if flex_ui.face:GetEntity():GetFlexNum()==0 then
 			flex_ui.face:SetModel(oldmodel)
 			return
 		end
+		flex_ui.animator.splines={}
+		flex_ui.animator.nsplines=0
 		flex_ui.build_flex_table()
 	end	
 end):SetIcon("icon16/page_white_go.png")
@@ -260,6 +268,7 @@ function flex_ui.hints:Paint(w,h)
 end
 
 function flex_ui.build_flex_table()
+	flex_ui.list:GetCanvas():Clear()
 	local ent=flex_ui.face:GetEntity()
 	for i=1,ent:GetFlexNum() do
 		local name=ent:GetFlexName(i)
@@ -270,7 +279,6 @@ function flex_ui.build_flex_table()
 		collapse:SetHeight(200)
 		collapse:SetExpanded(false)
 		collapse:SetLabel(name)
-		collapse.test=10
 		
 		function collapse:Paint(w,h)
 			draw.RoundedBox(0,0,0,w,h,dropdown_color)
@@ -282,6 +290,36 @@ function flex_ui.build_flex_table()
 		local spline=vgui.Create("interactive_graph")
 		spline:Dock(FILL)
 		spline:SetHeight(300)
+		
+		function spline:right_click()
+			local body=vgui.Create("DFrame")
+			body:SetSize(ScrW()*0.1,ScrH()*0.1)
+			body:SetSizable(false)
+			body:SetTitle("Offset") 
+			body:SetVisible(true) 
+			body:SetDraggable(true) 
+			body:ShowCloseButton(true) 
+			body:MakePopup()
+			body:Center()
+			body:SetParent(self)
+			
+			local text=vgui.Create("DTextEntry",body)
+			text:SetWidth(body:GetWide()*0.8)
+			text:Center()
+			text:SetText(flex_ui.animator:get_offset(name))
+
+			local button=vgui.Create("DButton",body)
+			button:Center()
+			button:SetY(body:GetTall()*0.7)
+			button:SetText("SET")
+			
+			button.DoClick=function()
+				local ofs=tonumber(text:GetValue())
+				if ofs==nil then return end
+				flex_ui.animator:set_offset(name,ofs)
+				body:Close()
+			end		
+		end
 		
 		collapse:SetContents(spline)
 		collapse.spline=spline

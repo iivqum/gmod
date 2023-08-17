@@ -19,13 +19,13 @@ end
 function panel:spline_cord(y)
 	local y2=1-y
 	if not self.zero_on_center then return y2 end
-	return 2*y2-1
+	return (2*y2-1)
 end
 
 function panel:draw_cord(y)
-	if not self.zero_on_center then return -y+1 end
+	if not self.zero_on_center then return (-y+1) end
 	local y2=(y+1)/2
-	return -y2+1
+	return (-y2+1)
 end
 
 function panel:Init()
@@ -36,6 +36,7 @@ function panel:Init()
 	self.pos=Vector()
 	self.mouse_is_down=false
 	self.t=0
+	self.offset=0
 	self.zoom=1
 end
 
@@ -117,7 +118,6 @@ end
 function panel:OnMousePressed(code)
 	local n=Vector(self:normalized_mouse_pos())
 	if code==MOUSE_LEFT and input.IsKeyDown(KEY_LCONTROL) then
-		print(self:spline_cord(n.y))
 		local id=self.spline:add_point(n.x,self:spline_cord(n.y))
 		self.selected_point=nil
 	elseif code==MOUSE_RIGHT and self.selected_point~=nil then
@@ -138,6 +138,8 @@ function panel:OnMousePressed(code)
 			end
 		end
 		self.mouse_is_down=true
+	elseif code==MOUSE_RIGHT and self.selected_point==nil then
+		self:right_click()		
 	end
 end
 
