@@ -109,6 +109,7 @@ opt1:AddOption("Save", function()
 		local name=text:GetValue()
 		if string.match(name,"[\\/:\"*?<>|]+") then return end
 		flex_ui.animator.name=text:GetValue()
+		flex_ui.animator:set_load_model(flex_ui.face:GetModel())
 		save_animation_file(flex_ui.animator)
 		body:Close()
 		flex_ui.window:SetTitle(flex_ui.animator.name)
@@ -268,8 +269,13 @@ function flex_ui.hints:Paint(w,h)
 end
 
 function flex_ui.build_flex_table()
-	flex_ui.list:GetCanvas():Clear()
 	local ent=flex_ui.face:GetEntity()
+	if file.Exists(flex_ui.animator.load_model,"GAME") then
+		ent:SetModel(flex_ui.animator.load_model)
+		ent:SetModelName(flex_ui.animator.load_model)
+	end
+
+	flex_ui.list:GetCanvas():Clear()
 	for i=1,ent:GetFlexNum() do
 		local name=ent:GetFlexName(i)
 		local min,max=ent:GetFlexBounds(i)
@@ -317,6 +323,7 @@ function flex_ui.build_flex_table()
 				local ofs=tonumber(text:GetValue())
 				if ofs==nil then return end
 				flex_ui.animator:set_offset(name,ofs)
+				spline:set_info("offset="..flex_ui.animator:get_offset(name))
 				body:Close()
 			end		
 		end
@@ -329,6 +336,8 @@ function flex_ui.build_flex_table()
 		else
 			flex_ui.animator:add_flex_curve(name,spline:get_spline())
 		end
+		
+		spline:set_info("offset="..flex_ui.animator:get_offset(name))
 		
 		if min<0 then
 			spline:zero_center()

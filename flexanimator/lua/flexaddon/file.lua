@@ -14,9 +14,20 @@ local function read_vector(f)
 	return f:ReadDouble(),f:ReadDouble()
 end
 
+local function write_string(f,s)
+	assert(type(s)=="string")
+	f:WriteUShort(#s)
+	f:Write(s)
+end
+
+local function read_string(f)
+	local l=f:ReadUShort()
+	local s=f:Read(l)
+	return s
+end
+
 local function write_spline_to_file(f,flex,spline)
-	f:WriteUShort(#flex)
-	f:Write(flex)
+	write_string(f,flex)
 	f:WriteUShort(#spline:get_points())
 	f:WriteDouble(spline.alpha)
 	f:WriteDouble(spline.tension)
@@ -28,8 +39,7 @@ local function write_spline_to_file(f,flex,spline)
 end
 
 local function read_spline_from_file(f)
-	local slen=f:ReadUShort()
-	local flex=f:Read(slen)
+	local flex=read_string(f)
 	local npoints=f:ReadUShort()
 	local alpha=f:ReadDouble()
 	local tension=f:ReadDouble()
@@ -51,7 +61,10 @@ function save_animation_file(anim)
 	f:WriteUShort(anim.nsplines)
 	for flex,spline in pairs(anim.splines) do
 		write_spline_to_file(f,flex,spline)
+		f:WriteDouble(anim:get_offset(flex))
 	end
+	print(anim.load_model)
+	write_string(f,anim.load_model)
 	f:Flush()
 	f:Close()
 	return true
@@ -65,8 +78,12 @@ function open_animation_file(name)
 	local anim=create_animator(name,length)
 	for i=1,nsplines do
 		local flex,spline=read_spline_from_file(f)
+		local offset=f:ReadDouble()
 		anim:add_flex_curve(flex==nil and "" or flex,spline)
+		anim:set_offset(flex==nil and "" or flex,offset)
 	end
+	local load_model=read_string(f)
+	anim.load_model=load_model
 	f:Close()
 	return anim
 end

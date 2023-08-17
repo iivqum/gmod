@@ -15,7 +15,9 @@ function create_animator(name,length)
 		progress=0,
 		nsplines=0,
 		looped=false,
-		playing=false
+		playing=false,
+		--model to save with so you dont have to keep changing it
+		load_model=""
 	},animation_mt)
 end
 
@@ -39,6 +41,7 @@ function animator_pull_from_cache(name)
 	local anim=create_animator(name,store.length)
 	anim.splines=store.splines
 	anim.nsplines=store.nsplines
+	anim.offsets=store.offsets
 	anim.max_progress=store.max_progress
 	return anim
 end
@@ -93,6 +96,11 @@ function animation_mt:has_flex(name)
 	return self.splines[name]~=nil
 end
 
+function animation_mt:set_load_model(model)
+	assert(type(model)=="string")
+	self.load_model=model
+end
+
 function animation_mt:update_flexes()
 	if not self.playing then return end
 	if not self.ent or not IsValid(self.ent) then print("flexaddon: warning, invalid entity ("..self.name..")") self:pause() return end
@@ -100,9 +108,9 @@ function animation_mt:update_flexes()
 		local fid=self.ent:GetFlexIDByName(flex)
 		if fid then
 			if #spline:get_points()>2 then
-				local weight=spline:sample_fofx(self:get_fraction())
+				local offset=self:get_offset(flex)
+				local weight=offset+spline:sample_fofx(self:get_fraction())*(1-offset)
 				local min,max=self.ent:GetFlexBounds(fid)
-				--all animations are flipped in the editor
 				self.ent:SetFlexWeight(fid,weight*max)
 			end
 		else

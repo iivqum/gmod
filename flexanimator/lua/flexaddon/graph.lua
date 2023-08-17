@@ -37,7 +37,13 @@ function panel:Init()
 	self.mouse_is_down=false
 	self.t=0
 	self.offset=0
+	self.info=""
 	self.zoom=1
+end
+
+function panel:set_info(text)
+	assert(type(text)=="string")
+	self.info=text
 end
 
 function panel:zero_center()
@@ -71,6 +77,7 @@ function panel:draw_spline(steps,w,h)
 			draw.RoundedBox(0,pos.x-0.5*self.point_selector_width,pos.y-0.5*self.point_selector_height,self.point_selector_width,self.point_selector_height,point==self.selected_point and point_color_selected or point_color)
 		end
 	end
+	draw.DrawText(self.info,"DermaDefault",w,0,color_black,TEXT_ALIGN_RIGHT)
 end
 
 function panel:use_spline(spline)
