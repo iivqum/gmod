@@ -288,7 +288,7 @@ function flex_ui.build_flex_table()
 		
 		function collapse:Paint(w,h)
 			draw.RoundedBox(0,0,0,w,h,dropdown_color)
-			if not self.spline or not self.spline:is_edited() then return end
+			if not self.spline or not self.spline.marked then return end
 			local barw=w*0.1
 			draw.RoundedBox(4,w-barw,0,barw,h,color_red)
 		end
@@ -324,6 +324,11 @@ function flex_ui.build_flex_table()
 				if ofs==nil then return end
 				flex_ui.animator:set_offset(name,ofs)
 				spline:set_info("offset="..flex_ui.animator:get_offset(name))
+				if ofs>0 then
+					spline.marked=true
+				else
+					spline.marked=false
+				end
 				body:Close()
 			end		
 		end
@@ -343,7 +348,11 @@ function flex_ui.build_flex_table()
 			spline:zero_center()
 		end
 		
-		if spline:is_edited() then
+		if flex_ui.animator:get_offset(name)>0 then
+			spline.marked=true
+		end
+		
+		if spline.marked then
 			collapse:SetExpanded(true)
 		end
 	end

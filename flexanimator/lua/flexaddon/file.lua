@@ -63,7 +63,6 @@ function save_animation_file(anim)
 		write_spline_to_file(f,flex,spline)
 		f:WriteDouble(anim:get_offset(flex))
 	end
-	print(anim.load_model)
 	write_string(f,anim.load_model)
 	f:Flush()
 	f:Close()

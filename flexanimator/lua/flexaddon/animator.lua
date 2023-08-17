@@ -20,7 +20,10 @@ function create_animator(name,length)
 		load_model="",
 		ease_in=false,
 		ease_length=0,
-		ease_time=0
+		ease_time=0,
+		ease_start_weights={},
+		--this will stop the animation trying to control every flex
+		override=true
 	},animation_mt)
 end
 
@@ -58,6 +61,11 @@ end
 
 function animation_mt:get_offset(flex)
 	return self.offsets[flex] or 0
+end
+
+function animation_mt:override(b)
+	assert(type(b)=="boolean")
+	self.override=b
 end
 
 function animation_mt:ease(t)
@@ -122,7 +130,7 @@ function animation_mt:sample(flex,fraction)
 	local spline=self:get_flex_curve(flex)
 	if not spline then print("flexaddon: warning, tried to fetch invalid spline ("..flex..")") return 0 end
 	local offset=self:get_offset(flex)
-	if #spline:get_points()<=2 then
+	if #spline:get_points()==2 then
 		return offset
 	end
 	return offset+spline:sample_fofx(fraction)*(1-offset)
@@ -132,22 +140,27 @@ function animation_mt:update_flexes()
 	if not self.playing then return end
 	if not self.ent or not IsValid(self.ent) then print("flexaddon: warning, invalid entity ("..self.name..")") self:pause() return end
 	for flex,spline in pairs(self.splines) do
-		local fid=self.ent:GetFlexIDByName(flex)
-		if fid then
-			local min,max=self.ent:GetFlexBounds(fid)
-			if self.ease_in then
-				local oldweight=self.ent:GetFlexWeight(fid)
-				local t=self.ease_time/self.ease_length
-				local new_weight=Lerp(t*t,oldweight,self:sample(flex,0)*max)
-				self.ent:SetFlexWeight(fid,new_weight)
+		if #spline:get_points()>2 or #spline:get_points()==2 and self.override then
+			local fid=self.ent:GetFlexIDByName(flex)
+			if fid then
+				local min,max=self.ent:GetFlexBounds(fid)
+				if self.ease_in then
+					if not self.ease_start_weights[flex] then
+						self.ease_start_weights[flex]=self.ent:GetFlexWeight(fid)
+					end
+					--local oldweight=self.ent:GetFlexWeight(fid)
+					local t=self.ease_time/self.ease_length
+					local new_weight=Lerp(t,self.ease_start_weights[flex],self:sample(flex,0)*max)
+					self.ent:SetFlexWeight(fid,new_weight)
+				else
+					local weight=self:sample(flex,self:get_fraction())
+					self.ent:SetFlexWeight(fid,weight*max)
+				end
 			else
-				local weight=self:sample(flex,self:get_fraction())
-				self.ent:SetFlexWeight(fid,weight*max)
+				print("flexaddon: warning, tried to animate invalid flex ("..flex..")")
+				self:pause()
+				return
 			end
-		else
-			print("flexaddon: warning, tried to animate invalid flex ("..flex..")")
-			self:pause()
-			return
 		end
 	end
 end
@@ -178,12 +191,19 @@ end
 
 local ent_mt=FindMetaTable("Entity")
 
-function ent_mt:play_animation(anim)
+function ent_mt:add_animation(name)
 	if self.flexanims==nil then self.flexanims={} end
-	if self.flexanims[anim.name]~=nil then return end
+	if self.flexanims[name]~=nil then return end
+	local anim=animator_pull_from_cache(name)
+	if not anim then print("flexaddon: warning, animation is not cached! ("..name..")") return end
 	anim:attach_entity(self)
-	anim:play()
-	self.flexanims[anim.name]=anim
+	self.flexanims[name]=anim
+	return anim
+end
+
+function ent_mt:remove_animation(name)
+	if self.flexanims==nil then self.flexanims={} end
+	self.flexanims[name]=nil
 end
 
 hook.Add("PostDrawHUD","flexaddon_animate",function()

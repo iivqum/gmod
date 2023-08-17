@@ -36,6 +36,7 @@ function panel:Init()
 	self.pos=Vector()
 	self.mouse_is_down=false
 	self.t=0
+	self.marked=false
 	self.offset=0
 	self.info=""
 	self.zoom=1
@@ -86,10 +87,6 @@ end
 
 function panel:get_spline()
 	return self.spline
-end
-
-function panel:is_edited()
-	return #self.spline:get_points()>2
 end
 
 function panel:sample(t)
