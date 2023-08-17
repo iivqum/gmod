@@ -17,7 +17,10 @@ function create_animator(name,length)
 		looped=false,
 		playing=false,
 		--model to save with so you dont have to keep changing it
-		load_model=""
+		load_model="",
+		ease_in=false,
+		ease_length=0,
+		ease_time=0
 	},animation_mt)
 end
 
@@ -57,6 +60,13 @@ function animation_mt:get_offset(flex)
 	return self.offsets[flex] or 0
 end
 
+function animation_mt:ease(t)
+	assert(type(t)=="number")
+	self.ease_in=true
+	self.ease_length=t
+	self.ease_time=0
+end
+
 function animation_mt:set_length(t)
 	assert(type(t)=="number")
 	assert(t>0, "flexaddon: set_length less than or equal to 0")
@@ -83,6 +93,13 @@ function animation_mt:set_stop(t)
 end
 
 function animation_mt:update_time(dt)
+	if self.ease_in then
+		self.ease_time=self.ease_time+dt
+		if self.ease_time>self.ease_length then
+			self.ease_in=false
+		end
+		return
+	end
 	if not self.playing then return end
 	self.progress=self.progress+dt
 	if self.progress>self.length or self.progress>self.max_progress then 
@@ -101,16 +118,31 @@ function animation_mt:set_load_model(model)
 	self.load_model=model
 end
 
+function animation_mt:sample(flex,fraction)
+	local spline=self:get_flex_curve(flex)
+	if not spline then print("flexaddon: warning, tried to fetch invalid spline ("..flex..")") return 0 end
+	local offset=self:get_offset(flex)
+	if #spline:get_points()<=2 then
+		return offset
+	end
+	local weight=offset+spline:sample_fofx(fraction)*(1-offset)
+	return weight
+end
+
 function animation_mt:update_flexes()
 	if not self.playing then return end
 	if not self.ent or not IsValid(self.ent) then print("flexaddon: warning, invalid entity ("..self.name..")") self:pause() return end
 	for flex,spline in pairs(self.splines) do
 		local fid=self.ent:GetFlexIDByName(flex)
 		if fid then
-			if #spline:get_points()>2 then
-				local offset=self:get_offset(flex)
-				local weight=offset+spline:sample_fofx(self:get_fraction())*(1-offset)
-				local min,max=self.ent:GetFlexBounds(fid)
+			local min,max=self.ent:GetFlexBounds(fid)
+			if self.ease_in then
+				local oldweight=self.ent:GetFlexWeight(fid)
+				local t=self.ease_time/self.ease_length
+				local new_weight=Lerp(t,oldweight,self:sample(flex,0))
+				self.ent:SetFlexWeight(fid,new_weight*max)
+			else
+				local weight=self:sample(flex,self:get_fraction())
 				self.ent:SetFlexWeight(fid,weight*max)
 			end
 		else
