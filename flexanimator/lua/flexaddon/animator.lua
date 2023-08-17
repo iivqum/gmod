@@ -93,14 +93,14 @@ function animation_mt:set_stop(t)
 end
 
 function animation_mt:update_time(dt)
+	if not self.playing then return end
 	if self.ease_in then
 		self.ease_time=self.ease_time+dt
 		if self.ease_time>self.ease_length then
 			self.ease_in=false
 		end
 		return
-	end
-	if not self.playing then return end
+	end	
 	self.progress=self.progress+dt
 	if self.progress>self.length or self.progress>self.max_progress then 
 		if self.looped then self.progress=0 return end
@@ -125,8 +125,7 @@ function animation_mt:sample(flex,fraction)
 	if #spline:get_points()<=2 then
 		return offset
 	end
-	local weight=offset+spline:sample_fofx(fraction)*(1-offset)
-	return weight
+	return offset+spline:sample_fofx(fraction)*(1-offset)
 end
 
 function animation_mt:update_flexes()
@@ -139,8 +138,8 @@ function animation_mt:update_flexes()
 			if self.ease_in then
 				local oldweight=self.ent:GetFlexWeight(fid)
 				local t=self.ease_time/self.ease_length
-				local new_weight=Lerp(t,oldweight,self:sample(flex,0))
-				self.ent:SetFlexWeight(fid,new_weight*max)
+				local new_weight=Lerp(t*t,oldweight,self:sample(flex,0)*max)
+				self.ent:SetFlexWeight(fid,new_weight)
 			else
 				local weight=self:sample(flex,self:get_fraction())
 				self.ent:SetFlexWeight(fid,weight*max)
