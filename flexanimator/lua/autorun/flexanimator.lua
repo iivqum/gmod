@@ -144,6 +144,7 @@ opt2:AddOption("Change model", function()
 			flex_ui.face:SetModel(oldmodel)
 			return
 		end
+		flex_ui.animator.load_model=path
 		flex_ui.animator.splines={}
 		flex_ui.animator.nsplines=0
 		flex_ui.build_flex_table()
@@ -349,6 +350,10 @@ function flex_ui.build_flex_table()
 		end
 		
 		if flex_ui.animator:get_offset(name)>0 then
+			spline.marked=true
+		end
+		
+		if #spline:get_spline():get_points()>2 then
 			spline.marked=true
 		end
 		
